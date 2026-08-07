@@ -1,0 +1,60 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #0b0f14;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mapbox attribution needs to read against the dark basemap. */
+.mapboxgl-ctrl-attrib {
+  background: rgba(11, 15, 20, 0.75) !important;
+}
+.mapboxgl-ctrl-attrib a {
+  color: #93a1b1 !important;
+}
+
+/* Hover tooltip. `pointer-events: none` is load-bearing: the popup sits under
+   the cursor, and without it the map sees the pointer leave the facility, hides
+   the popup, re-enters the facility, and flickers forever. */
+.facility-tooltip {
+  pointer-events: none;
+}
+.facility-tooltip .mapboxgl-popup-content {
+  background: #161d27;
+  color: #e6edf3;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-family:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+/* The tooltip has no fixed anchor so Mapbox can flip it away from a viewport
+   edge, which means the tip can point from any of eight directions. Each needs
+   its own border side coloured — Mapbox builds the tip as a CSS triangle, so
+   colouring the wrong side leaves a stray wedge. */
+.facility-tooltip .mapboxgl-popup-tip {
+  border-color: transparent;
+}
+.facility-tooltip.mapboxgl-popup-anchor-top .mapboxgl-popup-tip,
+.facility-tooltip.mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+.facility-tooltip.mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
+  border-bottom-color: #161d27;
+}
+.facility-tooltip.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip,
+.facility-tooltip.mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+.facility-tooltip.mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
+  border-top-color: #161d27;
+}
+.facility-tooltip.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-right-color: #161d27;
+}
+.facility-tooltip.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-left-color: #161d27;
+}

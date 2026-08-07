@@ -1,0 +1,34 @@
+{
+  "name": "data-center-map",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "An interactive map of the US data center buildout — operational, under construction, and planned.",
+  "scripts": {
+    "predev": "node scripts/refresh-data.mjs --max-age 12 --soft",
+    "dev": "vite",
+    "prebuild": "node scripts/refresh-data.mjs --max-age 12 --soft",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "data:refresh": "node scripts/refresh-data.mjs",
+    "data:refresh:crypto": "node scripts/refresh-data.mjs --include-crypto"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.2",
+    "mapbox-gl": "^3.27.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-map-gl": "^8.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9"
+  }
+}

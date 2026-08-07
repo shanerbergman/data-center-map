@@ -1,0 +1,47 @@
+name: Refresh data
+
+# Pulls the Compute Atlas dataset daily and commits the snapshot only when the
+# facility data actually changed. The refresh script hashes the features and
+# no-ops on an unchanged dataset, so this does not produce a daily empty commit.
+
+on:
+  schedule:
+    # 09:17 UTC daily. Deliberately off the hour — GitHub's scheduler is
+    # heavily contended on round numbers and silently delays those runs.
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Refresh snapshot
+        run: node scripts/refresh-data.mjs
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- public/data/facilities.geojson; then
+            echo "Dataset unchanged — nothing to commit."
+            exit 0
+          fi
+
+          COUNT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('public/data/facilities.geojson','utf8')).metadata.count)")
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/facilities.geojson
+          git commit -m "chore(data): refresh Compute Atlas snapshot (${COUNT} facilities)"
+          git push
