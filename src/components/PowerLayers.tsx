@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
 import { Layer, Source } from 'react-map-gl/mapbox';
-import type { CircleLayer, FillLayer, LineLayer } from 'react-map-gl/mapbox';
+import type {
+  CircleLayerSpecification,
+  FillLayerSpecification,
+  LineLayerSpecification,
+} from 'react-map-gl/mapbox';
 import type { ExpressionSpecification } from 'mapbox-gl';
 
 import {
@@ -43,7 +47,7 @@ export default function PowerLayers({ voltageFloor, beforeId }: Props) {
     const live: ExpressionSpecification = ['!=', ['get', 'disused'], true];
     const aboveFloor: ExpressionSpecification = ['>=', VOLTAGE, voltageFloor];
 
-    const lineLayer: LineLayer = {
+    const lineLayer: LineLayerSpecification = {
       id: 'oim-power-line',
       type: 'line',
       source: 'oim-power',
@@ -76,7 +80,7 @@ export default function PowerLayers({ voltageFloor, beforeId }: Props) {
       aboveFloor,
     ];
 
-    const substationLayer: CircleLayer = {
+    const substationLayer: CircleLayerSpecification = {
       id: 'oim-power-substation',
       type: 'circle',
       source: 'oim-power',
@@ -102,7 +106,7 @@ export default function PowerLayers({ voltageFloor, beforeId }: Props) {
       },
     };
 
-    const substationAreaLayer: FillLayer = {
+    const substationAreaLayer: FillLayerSpecification = {
       id: 'oim-power-substation-area',
       type: 'fill',
       source: 'oim-power',
@@ -114,7 +118,7 @@ export default function PowerLayers({ voltageFloor, beforeId }: Props) {
 
     // Generation is sized by output in MW, which is what actually matters for
     // whether a campus can be fed.
-    const plantLayer: CircleLayer = {
+    const plantLayer: CircleLayerSpecification = {
       id: 'oim-power-plant',
       type: 'circle',
       source: 'oim-power',
@@ -140,7 +144,7 @@ export default function PowerLayers({ voltageFloor, beforeId }: Props) {
       },
     };
 
-    const plantAreaLayer: FillLayer = {
+    const plantAreaLayer: FillLayerSpecification = {
       id: 'oim-power-plant-area',
       type: 'fill',
       source: 'oim-power',

@@ -6,11 +6,15 @@ import Map, {
   ScaleControl,
   Source,
 } from 'react-map-gl/mapbox';
+// Layer types are the style-spec names, not the `CircleLayer` aliases shown in
+// the react-map-gl docs — those belong to a different major version and are not
+// exported by v8. `ExpressionSpecification` comes straight from mapbox-gl,
+// which react-map-gl does not re-export.
 import type {
-  CircleLayer,
+  CircleLayerSpecification,
+  MapMouseEvent,
   MapRef,
-  MapLayerMouseEvent,
-  RasterLayer,
+  RasterLayerSpecification,
 } from 'react-map-gl/mapbox';
 import type { ExpressionSpecification } from 'mapbox-gl';
 
@@ -87,7 +91,7 @@ const COLOR_BY_BUCKET = [
 
 const DEFAULT_RADIUS = radiusByZoom();
 
-const satelliteLayer: RasterLayer = {
+const satelliteLayer: RasterLayerSpecification = {
   id: 'satellite',
   type: 'raster',
   source: 'satellite',
@@ -99,6 +103,30 @@ const satelliteLayer: RasterLayer = {
     'raster-saturation': -0.15,
   },
 };
+
+/**
+ * The parts of a queried map feature this component reads.
+ *
+ * mapbox-gl types `MapMouseEvent.features` as `GeoJSONFeature[]`, which extends
+ * `GeoJSON.Feature` — but mapbox-gl neither depends on nor references
+ * `@types/geojson`, so that namespace resolves to nothing and the inherited
+ * `properties`, `geometry` and `id` are invisible to consumers. `skipLibCheck`
+ * hides the underlying error inside the library and surfaces it here instead.
+ *
+ * Declaring the handful of fields we actually touch avoids adding a dependency
+ * purely to repair another package's types.
+ */
+interface MapHit {
+  layer?: { id?: string };
+  properties?: Record<string, unknown> | null;
+  geometry?: { coordinates?: [number, number] };
+  id?: string | number;
+}
+
+/** Features under the cursor, narrowed to the fields this component reads. */
+function hitsOf(event: MapMouseEvent): MapHit[] {
+  return (event.features ?? []) as unknown as MapHit[];
+}
 
 type PopupState =
   | { kind: 'facility'; longitude: number; latitude: number; properties: FacilityProperties }
@@ -222,7 +250,7 @@ export default function MapView({
     [comparing],
   );
 
-  const pointLayer = useMemo<CircleLayer>(
+  const pointLayer = useMemo<CircleLayerSpecification>(
     () => ({
       id: 'facilities',
       type: 'circle',
@@ -244,7 +272,7 @@ export default function MapView({
   // Stroke-only layers drawn over the dots. Selection is a firm white ring,
   // hover a lighter halo, so the two still read differently when both apply.
   // Declared after `comparing` because both radii depend on it.
-  const selectedLayer = useMemo<CircleLayer>(
+  const selectedLayer = useMemo<CircleLayerSpecification>(
     () => ({
       id: 'facility-selected',
       type: 'circle',
@@ -261,7 +289,7 @@ export default function MapView({
     [selectedId, comparing],
   );
 
-  const hoveredLayer = useMemo<CircleLayer>(
+  const hoveredLayer = useMemo<CircleLayerSpecification>(
     () => ({
       id: 'facility-hovered',
       type: 'circle',
@@ -287,23 +315,24 @@ export default function MapView({
   );
 
   const handleClick = useCallback(
-    (event: MapLayerMouseEvent) => {
+    (event: MapMouseEvent) => {
       // Only facilities are selectable; clicking a power line shouldn't clear
       // the currently open facility.
-      const facility = event.features?.find((f) => f.layer?.id === 'facilities');
+      const hits = hitsOf(event);
+      const facility = hits.find((f) => f.layer?.id === 'facilities');
       if (facility) {
         onSelect(facility.properties as unknown as FacilityProperties);
         return;
       }
-      const power = event.features?.some((f) => f.layer?.id?.startsWith('oim-power'));
+      const power = hits.some((f) => f.layer?.id?.startsWith('oim-power'));
       if (!power) onSelect(null);
     },
     [onSelect],
   );
 
   const handleMouseMove = useCallback(
-    (event: MapLayerMouseEvent) => {
-      const hits = event.features ?? [];
+    (event: MapMouseEvent) => {
+      const hits = hitsOf(event);
 
       // Facilities win any overlap — they're the subject of the map, and a
       // transmission line crossing a campus shouldn't hide the campus.
@@ -316,9 +345,9 @@ export default function MapView({
         // otherwise every pixel of movement re-renders the map subtree.
         if (popup?.kind === 'facility' && popup.properties.id === properties.id) return;
 
-        const [longitude, latitude] = (
-          facility.geometry as unknown as { coordinates: [number, number] }
-        ).coordinates;
+        const coordinates = facility.geometry?.coordinates;
+        if (!coordinates) return;
+        const [longitude, latitude] = coordinates;
         setPopup({ kind: 'facility', longitude, latitude, properties });
         onHover(properties.id);
         return;
@@ -328,7 +357,7 @@ export default function MapView({
 
       if (power) {
         setCursor('pointer');
-        const layerId = power.layer!.id;
+        const layerId = power.layer?.id ?? 'oim-power';
         const key = `${layerId}:${power.id ?? power.properties?.name ?? 'x'}`;
         if (popup?.kind === 'power' && popup.key === key) return;
 
